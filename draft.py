@@ -1,40 +1,51 @@
-def general_parser_individual_or_legal_entity(dictionary_pdf_texts):
-    """Parse PDFs as either Individual or Legal Entity documents."""
-    individual_parser = ProcessInputPDF()
-    legal_entity_parser = LegalEntityPDFLoader()
+
+
+from pathlib import Path
+
+def load_files(self, base_folder):
+    """Create a dictionary from the folder structure."""
+    files = {}
+    base_path = Path(base_folder)
     
-    def parse_document(pdf_text, partner):
-        """Try parsing as Individual, then Legal Entity."""
-        # Try Individual
-        if individual_parser.is_valid_document(pdf_text):
-            try:
-                individual_parser.check_substrings(pdf_text, individual_parser.required_substring_sets)
-                processed = individual_parser.process_client_history(pdf_text)
-                return {'type': 'individual', 'processed_client_history': processed, 
-                       'individual': individual_parser.create_individual(processed)}
-            except (MissingSubstringsError, Exception) as e:
-                print(f'Error parsing individual ({partner}): {e}')
+    # Check if base path exists and print it
+    print(f"Base folder: {base_path}")
+    print(f"Base folder exists: {base_path.exists()}")
+    print(f"Base folder is directory: {base_path.is_dir()}")
+    
+    # Find all PDFs in the structure with one glob pattern
+    pattern = "DO-*/partners/*/client history/*.pdf"
+    print(f"\nSearching for pattern: {pattern}")
+    
+    pdf_paths = list(base_path.glob(pattern))
+    print(f"Found {len(pdf_paths)} PDF files")
+    
+    for i, pdf_path in enumerate(pdf_paths, 1):
+        print(f"\n--- Processing file {i}/{len(pdf_paths)} ---")
+        print(f"Full path: {pdf_path}")
+        print(f"File exists: {pdf_path.exists()}")
         
-        # Try Legal Entity
-        if legal_entity_parser.is_valid_document(pdf_text):
-            try:
-                processed = legal_entity_parser.process_client_history(pdf_text)
-                return {'type': 'legal_entity', 'processed_client_history': processed,
-                       'legal_entity': legal_entity_parser.create_individual(processed)}
-            except Exception as e:
-                print(f'Error parsing legal entity ({partner}): {e}')
+        dd_folder = pdf_path.parents[3].name  # DO-* folder
+        partner_folder = pdf_path.parents[1].name  # partner folder
         
-        print(f'Invalid document for {partner}.')
-        return None
+        print(f"DD folder: {dd_folder}")
+        print(f"Partner folder: {partner_folder}")
+        
+        # Extract text from PDF
+        try:
+            pdf_text = self.load(str(pdf_path))
+            print(f"PDF text loaded, length: {len(pdf_text) if pdf_text else 0}")
+        except Exception as e:
+            print(f"Error loading PDF: {e}")
+            continue
+        
+        # Build nested dictionary
+        if dd_folder not in files:
+            files[dd_folder] = {}
+        files[dd_folder][partner_folder] = pdf_text
     
-    # Parse all documents with list comprehension
-    parsed_br = {
-        br: [result for partner, pdf_text in partners.items() 
-             if (result := parse_document(pdf_text, partner)) is not None]
-        for br, partners in dictionary_pdf_texts.items()
-    }
+    print(f"\n=== Final result ===")
+    print(f"Total DD folders: {len(files)}")
+    for dd, partners in files.items():
+        print(f"  {dd}: {len(partners)} partners")
     
-    with open("parsed_br.json", "w") as f:
-        json.dump(parsed_br, f, indent=2)
-    
-    return parsed_br
+    return files
