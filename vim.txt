@@ -47,3 +47,7 @@ ddkp: move line above
 o : create blank lien below
 3yw: copy next 3 words
 yy: copy the whole line 
+
+to select same words *
+to go to next iteration n, go back N
+to modify ciw, to replicate in next: n then .
