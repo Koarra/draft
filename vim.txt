@@ -51,3 +51,6 @@ yy: copy the whole line
 to select same words *
 to go to next iteration n, go back N
 to modify ciw, to replicate in next: n then .
+
+$: go to the end of the line
+^: go the beginning of the line
